@@ -34,8 +34,6 @@ class UserInfoFragment : Fragment() {
     private lateinit var myListsAdapter: MyListsAdapter
     private lateinit var rv_playlists: RecyclerView
 
-    private lateinit var spotifyWebService: SpotifyWebService
-
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?

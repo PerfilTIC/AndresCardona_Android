@@ -17,6 +17,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.android.volley.Request
 import com.android.volley.RequestQueue
 import com.android.volley.toolbox.Volley
+import com.bumptech.glide.Glide
 import com.cardona.musicdemo.R
 import com.cardona.musicdemo.model.dto.playList.PlayListResponse
 import com.cardona.musicdemo.model.networkCalls.webServices.SpotifyWebService
@@ -27,6 +28,7 @@ import com.cardona.musicdemo.view.adapters.PlayListAdapter
 import com.spotify.android.appremote.api.ConnectionParams
 import com.spotify.android.appremote.api.Connector
 import com.spotify.android.appremote.api.SpotifyAppRemote
+import kotlinx.android.synthetic.main.fragment_play_list.*
 import org.json.JSONObject
 
 /**
@@ -52,11 +54,11 @@ class PlayListFragment : Fragment() {
         val viewLayout = inflater.inflate(R.layout.fragment_play_list, container, false)
 
         setupRecyclerView(viewLayout)
-        val sharedPrefs = requestPlayList()
+        val sharedPrefs = requestPlayList(args.plId)
+        setupRecyclerSwipe(sharedPrefs)
 
         //playSongRemotely()
 
-        setupRecyclerSwipe(sharedPrefs)
 
         return viewLayout
     }
@@ -132,7 +134,8 @@ class PlayListFragment : Fragment() {
         touchHelper.attachToRecyclerView(recycler)
     }
 
-    private fun requestPlayList(): SharedPreferences {
+    private fun requestPlayList(plId: String): SharedPreferences {
+
         val sharedPrefs = context?.getSharedPreferences("SPOT_AUTH", 0)!!
         queue = Volley.newRequestQueue(context)
 
@@ -143,7 +146,7 @@ class PlayListFragment : Fragment() {
             map["Authorization"] = "Bearer $token"
 
             spotifyWebService.makeApiCall(
-                url = "$PLAY_LISTS_SONGS_ENDPOINT/${args.plId}",
+                url = "$PLAY_LISTS_SONGS_ENDPOINT/${plId}",
                 method = Request.Method.GET,
                 header = map,
                 body = null,
@@ -151,6 +154,9 @@ class PlayListFragment : Fragment() {
             ) { playListResponse ->
 
                 playAdapter.run { addPlayLists(playListResponse?.tracks?.items?.toMutableList()) }
+                tv_playlist2.text = playListResponse?.name
+                tv_plfollowers.text = playListResponse?.followers?.total.toString()+" followers"
+                Glide.with(context!!).load(playListResponse?.images?.get(0)?.url).into(iv_playlist2)
 
             }
         }

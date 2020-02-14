@@ -9,6 +9,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
 import androidx.recyclerview.widget.ItemTouchHelper
@@ -25,25 +26,29 @@ import com.cardona.musicdemo.utils.Constants.CLIENT_ID
 import com.cardona.musicdemo.utils.Constants.PLAY_LISTS_SONGS_ENDPOINT
 import com.cardona.musicdemo.utils.Constants.REDIRECT_URI
 import com.cardona.musicdemo.view.adapters.PlayListAdapter
+import com.cardona.musicdemo.viewmodels.MainViewModel
 import com.spotify.android.appremote.api.ConnectionParams
 import com.spotify.android.appremote.api.Connector
 import com.spotify.android.appremote.api.SpotifyAppRemote
 import dagger.android.support.DaggerFragment
 import kotlinx.android.synthetic.main.fragment_play_list.*
 import org.json.JSONObject
+import javax.inject.Inject
 
 /**
  * A simple [Fragment] subclass.
  */
 class PlayListFragment : DaggerFragment() {
 
-    private lateinit var queue: RequestQueue
+    @Inject
+    protected lateinit var spotifyWebService: SpotifyWebService
+
+    @Inject
+    lateinit var viewModelFactory: ViewModelProvider.Factory
+    private lateinit var vm: MainViewModel
 
     private lateinit var playAdapter : PlayListAdapter
     private lateinit var recycler: RecyclerView
-    private lateinit var spotifyWebService: SpotifyWebService
-
-    private lateinit var mySpotifyAppRemote: SpotifyAppRemote
 
     private val args: PlayListFragmentArgs by navArgs()
 
@@ -53,6 +58,7 @@ class PlayListFragment : DaggerFragment() {
     ): View? {
         // Inflate the layout for this fragment
         val viewLayout = inflater.inflate(R.layout.fragment_play_list, container, false)
+        vm = ViewModelProvider(this, viewModelFactory)[MainViewModel::class.java]
 
         setupRecyclerView(viewLayout)
         val sharedPrefs = requestPlayList(args.plId)
@@ -62,27 +68,6 @@ class PlayListFragment : DaggerFragment() {
 
 
         return viewLayout
-    }
-
-    private fun playSongRemotely() {
-
-        val connectionParams = ConnectionParams.Builder(CLIENT_ID)
-            .setRedirectUri(REDIRECT_URI)
-            .showAuthView(true)
-            .build()
-
-        SpotifyAppRemote.connect(context, connectionParams, object : Connector.ConnectionListener {
-
-            override fun onFailure(p0: Throwable?) {}
-
-            override fun onConnected(p0: SpotifyAppRemote?) {
-                mySpotifyAppRemote = p0!!
-
-                //mySpotifyAppRemote.playerApi.play("spotify:playlist:${args.plId}")
-                //mySpotifyAppRemote.call()
-            }
-
-        })
     }
 
     private fun setupRecyclerSwipe(sharedPrefs: SharedPreferences) {
@@ -138,10 +123,8 @@ class PlayListFragment : DaggerFragment() {
     private fun requestPlayList(plId: String): SharedPreferences {
 
         val sharedPrefs = context?.getSharedPreferences("SPOT_AUTH", 0)!!
-        queue = Volley.newRequestQueue(context)
 
         sharedPrefs.getString("token", "")?.let { token ->
-            spotifyWebService = SpotifyWebService(queue)
 
             val map = HashMap<String, String>()
             map["Authorization"] = "Bearer $token"
@@ -167,7 +150,7 @@ class PlayListFragment : DaggerFragment() {
     private fun setupRecyclerView(viewLayout: View) {
         recycler = viewLayout.findViewById(R.id.rv_playlist)
 
-        playAdapter = PlayListAdapter(context!!, findNavController())
+        playAdapter = PlayListAdapter(context!!)
         val linearLayout = LinearLayoutManager(context, RecyclerView.VERTICAL, false)
 
         recycler.apply {

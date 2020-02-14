@@ -1,7 +1,6 @@
 package com.cardona.musicdemo.di.viewModelInjection
 
 import androidx.lifecycle.ViewModelProvider
-import com.cardona.musicdemo.di.viewModelInjection.ViewModelFactory
 import dagger.Binds
 import dagger.Module
 

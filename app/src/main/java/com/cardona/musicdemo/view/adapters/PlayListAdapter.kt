@@ -8,15 +8,22 @@ import androidx.navigation.NavController
 import androidx.recyclerview.widget.RecyclerView
 import com.cardona.musicdemo.R
 import com.cardona.musicdemo.model.dto.playList.ItemsItem
+import com.cardona.musicdemo.utils.Constants
+import com.spotify.android.appremote.api.ConnectionParams
+import com.spotify.android.appremote.api.Connector
+import com.spotify.android.appremote.api.SpotifyAppRemote
 import kotlinx.android.synthetic.main.songs_list_item.view.*
 import java.util.concurrent.TimeUnit
 
 class PlayListAdapter(
-    private val context: Context,
-    private val navController: NavController
+    private val context: Context
 ) : RecyclerView.Adapter<PlayListAdapter.PlayListViewHolder>() {
 
     private var tracks: MutableList<ItemsItem?>? = mutableListOf()
+
+    init {
+        playSongRemotely()
+    }
 
     fun addPlayLists(itemsItem: MutableList<ItemsItem?>?) {
 
@@ -61,7 +68,31 @@ class PlayListAdapter(
         val popularity = tracks?.get(position)?.track?.popularity
         holder.itemView.ratingBar.rating = popularity?.div(100.toFloat()) ?: 0.toFloat()
 
+        holder.itemView.setOnClickListener {
+            tracks?.get(position)?.track?.uri?.let { it1 ->  mySpotifyAppRemote.playerApi.play(it1) }
+        }
+
     }
 
     inner class PlayListViewHolder(view: View) : RecyclerView.ViewHolder(view)
+
+    private lateinit var mySpotifyAppRemote: SpotifyAppRemote
+    private fun playSongRemotely() {
+
+        val connectionParams = ConnectionParams.Builder(Constants.CLIENT_ID)
+            .setRedirectUri(Constants.REDIRECT_URI)
+            .showAuthView(true)
+            .build()
+
+        SpotifyAppRemote.connect(context, connectionParams, object : Connector.ConnectionListener {
+
+            override fun onFailure(p0: Throwable?) {}
+
+            override fun onConnected(p0: SpotifyAppRemote?) {
+                mySpotifyAppRemote = p0!!
+            }
+
+        })
+    }
+
 }

@@ -7,29 +7,40 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.lifecycle.Observer
+import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.android.volley.Request
-import com.android.volley.RequestQueue
-import com.android.volley.toolbox.Volley
 import com.bumptech.glide.Glide
 import com.cardona.musicdemo.R
 import com.cardona.musicdemo.model.dto.myLists.MyListsResponse
+import com.cardona.musicdemo.model.dto.playList.PlayListResponse
 import com.cardona.musicdemo.model.dto.userAuth.UserResponse
 import com.cardona.musicdemo.model.networkCalls.webServices.SpotifyWebService
+import com.cardona.musicdemo.model.persistence.entities.PlayListEntity
+import com.cardona.musicdemo.model.persistence.entities.UserEntity
 import com.cardona.musicdemo.utils.Constants
 import com.cardona.musicdemo.utils.Constants.PLAY_LISTS_ENDPOINT
 import com.cardona.musicdemo.view.adapters.MyListsAdapter
+import com.cardona.musicdemo.viewmodels.MainViewModel
 import dagger.android.support.DaggerFragment
 import kotlinx.android.synthetic.main.fragment_user_info.*
+import javax.inject.Inject
 
 /**
  * A simple [Fragment] subclass.
  */
 class UserInfoFragment : DaggerFragment() {
 
-    private lateinit var queue: RequestQueue
+    @Inject
+    protected lateinit var spotifyWebService: SpotifyWebService
+
+    @Inject
+    lateinit var viewModelFactory: ViewModelProvider.Factory
+    private lateinit var vm: MainViewModel
+
     private lateinit var sharedPrefs: SharedPreferences
 
     private lateinit var myListsAdapter: MyListsAdapter
@@ -41,6 +52,7 @@ class UserInfoFragment : DaggerFragment() {
     ): View? {
         // Inflate the layout for this fragment
         val viewLayout = inflater.inflate(R.layout.fragment_user_info, container, false)
+        vm = ViewModelProvider(this, viewModelFactory)[MainViewModel::class.java]
 
         rv_playlists = viewLayout.findViewById(R.id.rv_playLists)
 
@@ -53,14 +65,59 @@ class UserInfoFragment : DaggerFragment() {
         }
 
         sharedPrefs = context?.getSharedPreferences("SPOT_AUTH", 0)!!
-        queue = Volley.newRequestQueue(context)
+        requestUserInfo()
 
-        requestUserInfo(SpotifyWebService(queue))
+        vm.mediatorLiveData.observe(viewLifecycleOwner, Observer { data ->
+
+            Log.d("myquery", "received")
+
+            if(data.isNotEmpty()){
+                when(data[0]){
+
+                    is UserEntity -> {
+
+                        Log.d("myquery", "received type 1")
+
+                        val userInfo = data[0] as UserEntity
+
+                        tv_username_edit.text = userInfo.username
+                        tv_email_edit.text = userInfo.email
+                        tv_followers_edit.text = userInfo.followers
+                        tv_country_edit.text = userInfo.country
+                        tv_product_edit.text = userInfo.product
+
+                        if(!userInfo.photo.equals("noPhoto")) {
+                            Glide.with(context!!).load(userInfo.photo).into(profile_image)
+                        }
+
+                        requestPlayLists()
+
+                    }
+
+                    is PlayListEntity -> {
+
+                        Log.d("myquery", "received type 2")
+
+                        val myListsResponse = data as List<PlayListEntity>
+                        if(myListsResponse.isNotEmpty()){
+                            //myListsAdapter.addPlayLists(myListsResponse)
+                        }
+
+
+                    }
+
+                }
+            }
+
+        })
+
+        vm.getUser()
+        vm.getPlayList()
 
         return viewLayout
     }
 
-    private fun requestUserInfo(spotifyWebService: SpotifyWebService) {
+    private fun requestUserInfo() {
 
         val sharedPreferences = context?.getSharedPreferences("SPOT_AUTH", 0)
         val token = sharedPreferences?.getString("token", "")
@@ -69,43 +126,22 @@ class UserInfoFragment : DaggerFragment() {
         val map = HashMap<String, String>()
         map["Authorization"] = "Bearer $token"
 
-        spotifyWebService.makeApiCall(
-            url = Constants.BASE_AUTH,
-            method = Request.Method.GET,
-            header = map,
-            body = null,
-            className = UserResponse::class.java
-        ){ user ->
-
-            user?.let { userInfo ->
-
-                tv_username_edit.text = userInfo.displayName
-                tv_email_edit.text = userInfo.email
-                tv_followers_edit.text = userInfo.followers?.total.toString()
-                tv_country_edit.text = userInfo.country
-                tv_product_edit.text = userInfo.product
-
-                if(userInfo.images?.isNotEmpty()!!){
-                    Glide.with(context!!).load(userInfo.images[0]?.url).
-                        into(profile_image)
-                }
-
-                requestPlayLists(spotifyWebService, map)
-
-            } ?: run{
-                Log.e("SpotifyInf", "No user retrieved")
-            }
-
-        }
+        vm.getFromRepo(Constants.BASE_AUTH, UserResponse::class.java, map)
 
     }
 
-    private fun requestPlayLists(spotifyWebService: SpotifyWebService, header: HashMap<String,String>) {
+    private fun requestPlayLists() {
+
+        val sharedPreferences = context?.getSharedPreferences("SPOT_AUTH", 0)
+        val token = sharedPreferences?.getString("token", "")
+        Log.d("SpotifyInf", token.toString())
+        val map = HashMap<String, String>()
+        map["Authorization"] = "Bearer $token"
 
         spotifyWebService.makeApiCall(
             url = PLAY_LISTS_ENDPOINT,
             method = Request.Method.GET,
-            header = header,
+            header = map,
             body = null,
             className = MyListsResponse::class.java
         ){ myListsResponse ->
@@ -113,6 +149,8 @@ class UserInfoFragment : DaggerFragment() {
             myListsAdapter.addPlayLists(myListsResponse?.items)
 
         }
+
+        //vm.getFromRepo(PLAY_LISTS_ENDPOINT, PlayListResponse::class.java, map)
 
     }
 

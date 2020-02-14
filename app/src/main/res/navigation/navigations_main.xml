@@ -5,5 +5,30 @@
     <fragment
         android:id="@+id/userInfoFragment"
         android:name="com.cardona.musicdemo.view.fragments.UserInfoFragment"
-        android:label="UserInfoFragment" />
+        android:label="UserInfoFragment" >
+        <action
+            android:id="@+id/action_userInfoFragment_to_playListFragment"
+            app:destination="@id/playListFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/playListFragment"
+        android:name="com.cardona.musicdemo.view.fragments.PlayListFragment"
+        android:label="PlayListFragment" >
+        <action
+            android:id="@+id/action_playListFragment_to_songPlayerFragment"
+            app:destination="@id/songPlayerFragment" />
+        <argument
+            android:name="plId"
+            app:argType="string"
+            android:defaultValue="-1" />
+    </fragment>
+    <fragment
+        android:id="@+id/songPlayerFragment"
+        android:name="com.cardona.musicdemo.view.fragments.SongPlayerFragment"
+        android:label="SongPlayerFragment" >
+        <argument
+            android:name="trackId"
+            app:argType="string"
+            android:defaultValue="-1" />
+    </fragment>
 </navigation>

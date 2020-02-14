@@ -21,12 +21,13 @@ import com.cardona.musicdemo.model.networkCalls.webServices.SpotifyWebService
 import com.cardona.musicdemo.utils.Constants
 import com.cardona.musicdemo.utils.Constants.PLAY_LISTS_ENDPOINT
 import com.cardona.musicdemo.view.adapters.MyListsAdapter
+import dagger.android.support.DaggerFragment
 import kotlinx.android.synthetic.main.fragment_user_info.*
 
 /**
  * A simple [Fragment] subclass.
  */
-class UserInfoFragment : Fragment() {
+class UserInfoFragment : DaggerFragment() {
 
     private lateinit var queue: RequestQueue
     private lateinit var sharedPrefs: SharedPreferences

@@ -28,13 +28,14 @@ import com.cardona.musicdemo.view.adapters.PlayListAdapter
 import com.spotify.android.appremote.api.ConnectionParams
 import com.spotify.android.appremote.api.Connector
 import com.spotify.android.appremote.api.SpotifyAppRemote
+import dagger.android.support.DaggerFragment
 import kotlinx.android.synthetic.main.fragment_play_list.*
 import org.json.JSONObject
 
 /**
  * A simple [Fragment] subclass.
  */
-class PlayListFragment : Fragment() {
+class PlayListFragment : DaggerFragment() {
 
     private lateinit var queue: RequestQueue
 
